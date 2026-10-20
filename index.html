@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#c9eaff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Papero Coccole">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+
+<title>Il papero curioso</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overscroll-behavior: none; }
+  html { touch-action: none; }
+  body {
+    margin: 0; min-height: 100vh; min-height: 100dvh; overflow: hidden;
+    touch-action: none;
+    display: grid; place-items: center;
+    font-family: ui-rounded, "Trebuchet MS", system-ui, sans-serif;
+    background:
+      radial-gradient(ellipse at 50% 76%, rgba(255,255,255,.75) 0 14%, transparent 45%),
+      linear-gradient(180deg, #c9eaff 0%, #e8f7ff 55%, #d9efc2 100%);
+  }
+  .scene { width: min(94vw, 760px); text-align: center; position: relative; touch-action: none; }
+  .hint {
+    color: #4b6d7e; font-size: clamp(13px, 2vw, 16px);
+    letter-spacing: .02em; margin: 0 0 8px;
+  }
+  .cuddle-counter {
+    display: inline-flex; align-items: center; gap: 7px;
+    margin: 0 auto 8px; padding: 8px 15px;
+    border: 2px solid rgba(255,255,255,.95); border-radius: 999px;
+    background: rgba(255,255,255,.78); color: #8d5a77;
+    box-shadow: 0 5px 16px rgba(94,132,151,.12);
+    font-size: clamp(13px, 2vw, 15px); font-weight: 800;
+    letter-spacing: .02em; user-select: none;
+  }
+  .cuddle-counter .counter-heart { font-size: 18px; color: #ff7296; animation: counter-heartbeat 1.6s ease-in-out infinite; }
+  #cuddleCount { display: inline-block; min-width: 1ch; color: #e65e8a; font-variant-numeric: tabular-nums; }
+  .quack-bubble {
+    position: absolute; z-index: 5; pointer-events: none; white-space: nowrap;
+    padding: 9px 13px; border: 2px solid #805537; border-radius: 18px;
+    background: #fffdf6; color: #79503a; font-size: clamp(13px, 2.5vw, 19px);
+    font-weight: 900; letter-spacing: .015em; box-shadow: 0 4px 0 rgba(112,69,45,.12);
+    transform: translate(-50%, -50%) scale(.55) rotate(var(--tilt));
+    opacity: 0; animation: quack-pop 1050ms cubic-bezier(.2,.8,.2,1) forwards;
+  }
+  .quack-bubble::after {
+    content: ""; position: absolute; bottom: -8px; left: 22px; width: 13px; height: 13px;
+    background: #fffdf6; border-right: 2px solid #805537; border-bottom: 2px solid #805537;
+    transform: rotate(45deg);
+  }
+  svg { display:block; width: 100%; height: auto; overflow: visible; touch-action: none !important; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+  body, .scene, svg { -webkit-touch-callout: none; }
+  .duck-shadow { filter: blur(8px); opacity: .18; }
+  #duckCharacter { transform-box: fill-box; transform-origin: 50% 88%; animation: idle-breath 3.6s ease-in-out infinite; }
+  #duckScene.walking #duckCharacter { animation: little-walk 720ms ease-in-out; }
+  #footLeft, #footRight { transform-box: fill-box; transform-origin: 50% 12%; }
+  #duckScene.walking #footLeft { animation: step-left 720ms ease-in-out; }
+  #duckScene.walking #footRight { animation: step-right 720ms ease-in-out; }
+  #beak { transform-box: fill-box; transform-origin: 50% 15%; transition: transform 70ms ease-out; }
+  #openMouth { opacity: 0; transform-box: fill-box; transform-origin: center; transition: opacity 55ms ease-out; pointer-events: none; }
+  #duckScene.quacking #openMouth { opacity: 1; animation: mouth-open 145ms ease-in-out; }
+  #duckScene.quacking #beak { transform: scaleY(1.12) translateY(2px); }
+  #duckScene.quacking #beakHighlight { opacity: .15; }
+  #head { transform-box: fill-box; transform-origin: 50% 88%; transition: transform 180ms cubic-bezier(.2,.75,.25,1); }
+  .eye-pupil { transition: transform 65ms linear; }
+  .blink { transform-box: fill-box; transform-origin: center; }
+  #eyelids { opacity: 0; pointer-events: none; }
+  #happyFace { opacity: 0; pointer-events: none; transition: opacity 90ms ease; }
+  #happyBlush { opacity: 0; transition: opacity 120ms ease; }
+  #duckScene.petting #happyFace, #duckScene.petting #happyBlush { opacity: 1; }
+  #duckScene.petting #pupilLeft, #duckScene.petting #pupilRight { opacity: 0; }
+  #duckScene.petting #eyelids { opacity: 0 !important; }
+  .footer { color: #678291; font-size: 12px; margin-top: -8px; }
+  #duckScene { cursor: pointer; }
+  #duckScene.petting #body { animation: cuddle-bounce 560ms ease-in-out; transform-origin: 50% 80%; }
+  #duckScene.petting #head { animation: cuddle-nuzzle 560ms ease-in-out; }
+  .heart { position:absolute; z-index:3; pointer-events:none; color:#ff668b; font-size:28px; line-height:1; filter:drop-shadow(0 2px 2px rgba(140,67,82,.15)); animation:heart-float 1050ms ease-out forwards; user-select:none; }
+  @keyframes idle-breath {
+    0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1, 1); }
+    28% { transform: translate(1px, -1px) rotate(.35deg) scale(1.004, 1.008); }
+    56% { transform: translate(-1px, 0) rotate(-.3deg) scale(1.008, .997); }
+    78% { transform: translate(0, 1px) rotate(.15deg) scale(.998, 1.003); }
+  }
+  @keyframes little-walk {
+    0%, 100% { transform: translateX(0) translateY(0) rotate(0deg); }
+    15% { transform: translateX(-5px) translateY(-3px) rotate(-1.8deg); }
+    32% { transform: translateX(3px) translateY(1px) rotate(1.2deg); }
+    49% { transform: translateX(7px) translateY(-4px) rotate(2deg); }
+    67% { transform: translateX(-3px) translateY(1px) rotate(-1deg); }
+    84% { transform: translateX(2px) translateY(-2px) rotate(.6deg); }
+  }
+  @keyframes step-left {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    18% { transform: translate(-8px, -8px) rotate(-13deg); }
+    38% { transform: translate(-3px, 1px) rotate(5deg); }
+    58% { transform: translate(5px, -3px) rotate(2deg); }
+    78% { transform: translate(2px, 0) rotate(0deg); }
+  }
+  @keyframes step-right {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    18% { transform: translate(4px, 0) rotate(0deg); }
+    38% { transform: translate(8px, -8px) rotate(13deg); }
+    58% { transform: translate(2px, 1px) rotate(-5deg); }
+    78% { transform: translate(-4px, -2px) rotate(-2deg); }
+  }
+  @keyframes mouth-open { 0% { transform: scaleY(.25); } 45% { transform: scaleY(1); } 100% { transform: scaleY(.75); } }
+  @keyframes cuddle-bounce { 0%,100% { transform:translateY(0) scale(1); } 25% { transform:translateY(-9px) scale(1.025,.98); } 52% { transform:translateY(1px) scale(.985,1.025); } 75% { transform:translateY(-4px) scale(1.01,.995); } }
+  @keyframes cuddle-nuzzle { 0%,100% { rotate:0deg; } 28% { rotate:-5deg; } 55% { rotate:4deg; } 78% { rotate:-2deg; } }
+  @keyframes heart-float { 0% { opacity:0; transform:translate(-50%,8px) scale(.45) rotate(-12deg); } 15% { opacity:1; } 100% { opacity:0; transform:translate(calc(-50% + var(--drift)),-90px) scale(1.15) rotate(14deg); } }
+  @keyframes counter-heartbeat { 0%,100% { transform:scale(1); } 12% { transform:scale(1.22); } 24% { transform:scale(1); } 36% { transform:scale(1.14); } 48% { transform:scale(1); } }
+  @keyframes quack-pop {
+    0% { opacity:0; transform:translate(-50%,-35%) scale(.55) rotate(var(--tilt)); }
+    16% { opacity:1; transform:translate(-50%,-50%) scale(1.06) rotate(var(--tilt)); }
+    25% { transform:translate(-50%,-50%) scale(1) rotate(var(--tilt)); }
+    78% { opacity:1; }
+    100% { opacity:0; transform:translate(-50%,-80%) scale(.9) rotate(var(--tilt)); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #head, .eye-pupil { transition: none; }
+    #duckCharacter { animation: none; }
+  }
+</style>
+</head>
+<body>
+<main class="scene">
+  <p class="hint" id="hint">Trascina il dito per guidare lo sguardo · doppio tocco per una coccola 💗</p>
+  <div class="cuddle-counter" aria-live="polite"><span class="counter-heart">♥</span><span>Cuddles:</span><span id="cuddleCount">0</span><span id="cuddleLabel">💗</span></div>
+  <svg id="duckScene" viewBox="0 0 640 650" role="img" aria-label="Papero cartoon interattivo che segue il dito o il cursore">
+    <ellipse class="duck-shadow" cx="324" cy="570" rx="170" ry="22" fill="#527d4c"/>
+    <g id="duckCharacter">
+    <!-- Body -->
+    <g id="body">
+      <path d="M188 354 C145 397 142 480 183 530 C218 574 276 587 335 580 C418 577 478 526 476 450 C474 388 430 350 381 336 Z"
+            fill="#fff1d8" stroke="#70452d" stroke-width="7" stroke-linejoin="round"/>
+      <!-- wing -->
+      <path d="M198 422 C159 394 154 443 166 475 C179 511 222 532 261 515 C292 501 309 468 301 438 C294 414 278 425 260 447 C246 465 222 462 198 422Z"
+            fill="#ffefd5" stroke="#805537" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M184 470 Q205 493 233 483 M199 493 Q220 512 246 501" fill="none" stroke="#d2ad82" stroke-width="4" stroke-linecap="round"/>
+      <!-- legs -->
+      <g id="footLeft">
+        <path d="M260 548 L260 586 Q234 600 220 615 Q211 626 231 630 L302 628 Q324 625 309 609 L287 588 L289 551Z"
+              fill="#ff9d24" stroke="#70452d" stroke-width="6" stroke-linejoin="round"/>
+      </g>
+      <g id="footRight">
+        <path d="M376 548 L380 586 Q357 602 348 615 Q342 628 362 630 L433 625 Q454 621 438 606 L408 587 L406 548Z"
+              fill="#ff9d24" stroke="#70452d" stroke-width="6" stroke-linejoin="round"/>
+      </g>
+    </g>
+    <!-- Head and face move together -->
+    <g id="head">
+      <path d="M184 286 C161 242 165 168 204 113 C238 65 294 48 344 61 C391 73 424 110 439 155 C449 183 447 211 463 230 C480 252 471 286 450 307 C431 326 408 334 386 337 C352 357 301 365 253 350 C218 339 194 318 184 286Z"
+            fill="#fff2dc" stroke="#70452d" stroke-width="7" stroke-linejoin="round"/>
+      <!-- subtle cheek shading -->
+      <ellipse cx="210" cy="292" rx="28" ry="17" fill="#ffd8bd" opacity=".7" transform="rotate(-20 210 292)"/>
+      <ellipse cx="424" cy="265" rx="27" ry="16" fill="#ffd8bd" opacity=".7" transform="rotate(-20 424 265)"/>
+      <!-- tuft -->
+      <path d="M275 72 C256 35 281 15 301 42 C310 6 348 18 345 53 C340 69 328 77 319 82Z"
+            fill="#fff2dc" stroke="#70452d" stroke-width="7" stroke-linejoin="round"/>
+      <!-- eyes whites -->
+      <ellipse cx="253" cy="218" rx="38" ry="49" fill="#fff"/>
+      <ellipse cx="375" cy="190" rx="37" ry="47" fill="#fff"/>
+      <!-- pupils move independently -->
+      <g id="pupilLeft" class="eye-pupil">
+        <ellipse cx="260" cy="225" rx="24" ry="34" fill="#251b17"/>
+        <circle cx="251" cy="208" r="9" fill="#fff"/>
+        <circle cx="268" cy="237" r="4" fill="#fff"/>
+      </g>
+      <g id="pupilRight" class="eye-pupil">
+        <ellipse cx="380" cy="197" rx="23" ry="32" fill="#251b17"/>
+        <circle cx="371" cy="181" r="9" fill="#fff"/>
+        <circle cx="389" cy="207" r="4" fill="#fff"/>
+      </g>
+      <!-- beak -->
+      <path id="beak" d="M302 252 C318 232 339 225 365 239 C388 251 408 246 418 261 C430 279 404 304 372 315 C339 327 295 318 279 302 C266 289 282 270 302 252Z"
+            fill="#ffad25" stroke="#70452d" stroke-width="7" stroke-linejoin="round"/>
+      <ellipse id="openMouth" cx="350" cy="283" rx="34" ry="18" fill="#642b22" stroke="#70452d" stroke-width="4"/>
+      <path id="beakHighlight" d="M280 299 C311 313 365 315 402 286" fill="none" stroke="#c87317" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="319" cy="254" r="4.5" fill="#8c4c1d"/>
+      <circle cx="365" cy="255" r="4.5" fill="#8c4c1d"/>
+      <!-- extra blush for the happy cuddle expression -->
+      <g id="happyBlush" fill="#ff9caa">
+        <ellipse cx="220" cy="282" rx="20" ry="10" opacity=".8"/>
+        <ellipse cx="414" cy="255" rx="20" ry="10" opacity=".8"/>
+      </g>
+      <!-- eyes gently closed, smiling during cuddles -->
+      <g id="happyFace" fill="none" stroke="#70452d" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M222 220 Q251 247 280 220"/>
+        <path d="M345 194 Q374 221 403 194"/>
+        <path d="M302 335 Q326 350 350 333" stroke="#d98b83" stroke-width="5"/>
+      </g>
+      <!-- eyelids overlay for blink -->
+      <g id="eyelids">
+        <ellipse cx="253" cy="218" rx="39" ry="50" fill="#fff2dc" stroke="#70452d" stroke-width="4"/>
+        <ellipse cx="375" cy="190" rx="38" ry="48" fill="#fff2dc" stroke="#70452d" stroke-width="4"/>
+      </g>
+    </g>
+    </g>
+    <!-- little ground details -->
+    <g fill="none" stroke="#8dbb70" stroke-width="5" stroke-linecap="round">
+      <path d="M94 567 q-16 -24 -26 -27 M104 573 q9 -26 24 -32 M510 574 q-4 -24 10 -37 M530 572 q17 -18 30 -18"/>
+    </g>
+  </svg>
+  <p class="footer">Touch Edition • trascina il dito per muovere lo sguardo, doppio tocco sul papero per coccolarlo</p>
+</main>
+<script>
+(() => {
+  const svg = document.getElementById('duckScene');
+  const head = document.getElementById('head');
+  const left = document.getElementById('pupilLeft');
+  const right = document.getElementById('pupilRight');
+  const lids = document.getElementById('eyelids');
+  let blinkTimer;
+  let audioContext = null;
+  let audioReady = false;
+  let quackTimer = null;
+  let mouthTimer = null;
+  let cuddleCount = 0;
+  let lastTouchTap = 0;
+  let lastTouchPoint = null;
+  let suppressClickUntil = 0;
+
+  // Sintetizza un breve verso rauco e discendente, simile a un quack.
+  function initAudio() {
+    if (audioReady) return;
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      audioContext = new AudioCtx();
+      if (audioContext.state === 'suspended') audioContext.resume();
+      audioReady = true;
+      scheduleQuack();
+    } catch (err) { /* Audio non supportato: le animazioni visive restano attive. */ }
+  }
+
+  function oneQuack(delay = 0) {
+    if (!audioContext || !audioReady) return;
+    const t = audioContext.currentTime + delay;
+    const osc = audioContext.createOscillator();
+    const sub = audioContext.createOscillator();
+    const filter = audioContext.createBiquadFilter();
+    const gain = audioContext.createGain();
+    const master = audioContext.createGain();
+    osc.type = 'sawtooth';
+    sub.type = 'triangle';
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(1350, t);
+    filter.frequency.exponentialRampToValueAtTime(520, t + 0.17);
+    osc.frequency.setValueAtTime(570, t);
+    osc.frequency.exponentialRampToValueAtTime(205, t + 0.19);
+    osc.frequency.setValueAtTime(245, t + 0.2);
+    osc.frequency.exponentialRampToValueAtTime(155, t + 0.31);
+    sub.frequency.setValueAtTime(285, t);
+    sub.frequency.exponentialRampToValueAtTime(105, t + 0.3);
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.22, t + 0.025);
+    gain.gain.setValueAtTime(0.16, t + 0.16);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.33);
+    master.gain.value = 0.65;
+    osc.connect(filter); sub.connect(filter); filter.connect(gain); gain.connect(master); master.connect(audioContext.destination);
+    osc.start(t); sub.start(t); osc.stop(t + 0.34); sub.stop(t + 0.34);
+  }
+
+  function showQuackBubble() {
+    const scene = document.querySelector('.scene');
+    const r = scene.getBoundingClientRect();
+    // Scegli punti intorno al papero, alternando lati e parte alta per un effetto spontaneo.
+    const spots = [
+      [0.19 + Math.random() * 0.12, 0.30 + Math.random() * 0.18],
+      [0.70 + Math.random() * 0.12, 0.25 + Math.random() * 0.20],
+      [0.28 + Math.random() * 0.40, 0.12 + Math.random() * 0.12],
+      [0.12 + Math.random() * 0.13, 0.48 + Math.random() * 0.13],
+      [0.75 + Math.random() * 0.12, 0.45 + Math.random() * 0.14]
+    ];
+    const spot = spots[Math.floor(Math.random() * spots.length)];
+    const bubble = document.createElement('span');
+    bubble.className = 'quack-bubble';
+    bubble.textContent = 'Quack Quack!';
+    bubble.style.left = `${Math.max(58, Math.min(r.width - 58, r.width * spot[0]))}px`;
+    bubble.style.top = `${Math.max(60, Math.min(r.height - 70, r.height * spot[1]))}px`;
+    bubble.style.setProperty('--tilt', `${(Math.random() - .5) * 14}deg`);
+    scene.appendChild(bubble);
+    bubble.addEventListener('animationend', () => bubble.remove(), { once: true });
+  }
+
+  function quackPair() {
+    if (svg.classList.contains('petting') || svg.classList.contains('quacking')) return;
+    svg.classList.add('quacking');
+    showQuackBubble();
+    oneQuack(0);
+    clearTimeout(mouthTimer);
+    mouthTimer = setTimeout(() => {
+      svg.classList.remove('quacking');
+      setTimeout(() => {
+        if (svg.classList.contains('petting')) return;
+        svg.classList.add('quacking');
+        showQuackBubble();
+        oneQuack(0);
+        mouthTimer = setTimeout(() => svg.classList.remove('quacking'), 190);
+      }, 120);
+    }, 190);
+  }
+
+  function scheduleQuack() {
+    clearTimeout(quackTimer);
+    quackTimer = setTimeout(() => {
+      quackPair();
+      scheduleQuack();
+    }, 6500 + Math.random() * 9000);
+  }
+
+  function lookAt(clientX, clientY) {
+    const rect = svg.getBoundingClientRect();
+    const x = ((clientX - rect.left) / rect.width) * 640;
+    const y = ((clientY - rect.top) / rect.height) * 650;
+    const dx = (x - 320) / 320;
+    const dy = (y - 220) / 280;
+
+    // Più escursione dello sguardo, soprattutto verso i lati.
+    // Il movimento è leggermente asimmetrico per dare più carattere al papero.
+    const eyeX = Math.max(-13, Math.min(13, dx * 13));
+    const eyeY = Math.max(-9, Math.min(9, dy * 8));
+    left.setAttribute('transform', `translate(${eyeX} ${eyeY})`);
+    right.setAttribute('transform', `translate(${eyeX} ${eyeY})`);
+
+    // Inclina la testa in modo più evidente verso il cursore.
+    const angle = Math.max(-12, Math.min(12, dx * 10 + dy * 2));
+    const turn = Math.max(-5, Math.min(5, dx * 4));
+    head.style.transform = `translateX(${turn}px) rotate(${angle}deg)`;
+  }
+  window.addEventListener('pointerdown', initAudio, {passive:true, once:true});
+
+  // iOS Safari fallback: explicitly cancel native page scrolling while a finger
+  // is interacting with the duck. touch-action alone is not honored consistently
+  // in every embedded preview / older iOS version.
+  let touchStartPoint = null;
+  svg.addEventListener('touchstart', e => {
+    if (!e.touches || !e.touches.length) return;
+    e.preventDefault();
+    initAudio();
+    const t = e.touches[0];
+    touchStartPoint = { x: t.clientX, y: t.clientY, moved: false };
+    lookAt(t.clientX, t.clientY);
+  }, { passive: false });
+  svg.addEventListener('touchmove', e => {
+    if (!e.touches || !e.touches.length) return;
+    e.preventDefault();
+    const t = e.touches[0];
+    if (touchStartPoint && Math.hypot(t.clientX-touchStartPoint.x, t.clientY-touchStartPoint.y) > 8) touchStartPoint.moved = true;
+    lookAt(t.clientX, t.clientY);
+  }, { passive: false });
+  svg.addEventListener('touchend', e => {
+    e.preventDefault();
+    if (!e.changedTouches || !e.changedTouches.length) return;
+    const t = e.changedTouches[0];
+    lookAt(t.clientX, t.clientY);
+    // Only a stationary double tap triggers cuddles; dragging just steers the gaze.
+    if (touchStartPoint && !touchStartPoint.moved) {
+      const now = Date.now();
+      const r = svg.getBoundingClientRect();
+      const x = (t.clientX-r.left)/r.width*640, y = (t.clientY-r.top)/r.height*650;
+      const onDuck = x > 130 && x < 500 && y > 45 && y < 635;
+      const nearPrevious = lastTouchPoint && Math.hypot(t.clientX-lastTouchPoint.x, t.clientY-lastTouchPoint.y) < 42;
+      if (onDuck && now-lastTouchTap < 380 && nearPrevious) {
+        suppressClickUntil = now + 700;
+        cuddleCount += 1;
+        document.getElementById('cuddleCount').textContent = cuddleCount;
+        document.getElementById('cuddleLabel').textContent = cuddleCount === 1 ? '💗' : '💕';
+        cuddle(t.clientX, t.clientY);
+        lastTouchTap = 0; lastTouchPoint = null;
+      } else {
+        lastTouchTap = now;
+        lastTouchPoint = {x:t.clientX, y:t.clientY};
+      }
+    } else {
+      lastTouchTap = 0; lastTouchPoint = null;
+    }
+    touchStartPoint = null;
+  }, { passive: false });
+  svg.addEventListener('touchcancel', () => { touchStartPoint = null; lastTouchTap = 0; lastTouchPoint = null; }, { passive: true });
+
+  // Mouse and touch both control the gaze. On touch, capture the pointer so
+  // the duck keeps following the finger even if it moves outside the SVG.
+  window.addEventListener('pointermove', e => {
+    if (e.pointerType !== 'touch' || e.buttons || e.pressure > 0) lookAt(e.clientX, e.clientY);
+    else if (e.pointerType === 'mouse') lookAt(e.clientX, e.clientY);
+  }, {passive:true});
+  svg.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'touch') {
+      try { svg.setPointerCapture(e.pointerId); } catch (_) {}
+      lookAt(e.clientX, e.clientY);
+    }
+  }, {passive:true});
+  svg.addEventListener('pointerup', e => {
+    // Touch is handled by explicit touchend above for robust iOS Safari behavior.
+    if (e.pointerType !== 'touch') return;
+    return; // native touchend handles tap detection; avoids duplicate cuddles
+    lookAt(e.clientX, e.clientY);
+    const now = Date.now();
+    const r = svg.getBoundingClientRect();
+    const x = (e.clientX-r.left)/r.width*640, y = (e.clientY-r.top)/r.height*650;
+    const onDuck = x > 130 && x < 500 && y > 45 && y < 635;
+    const nearPrevious = lastTouchPoint && Math.hypot(e.clientX-lastTouchPoint.x, e.clientY-lastTouchPoint.y) < 42;
+    if (onDuck && now-lastTouchTap < 380 && nearPrevious) {
+      suppressClickUntil = now + 650;
+      initAudio();
+      cuddleCount += 1;
+      document.getElementById('cuddleCount').textContent = cuddleCount;
+      document.getElementById('cuddleLabel').textContent = cuddleCount === 1 ? '💗' : '💕';
+      cuddle(e.clientX, e.clientY);
+      lastTouchTap = 0;
+      lastTouchPoint = null;
+    } else {
+      lastTouchTap = now;
+      lastTouchPoint = {x:e.clientX, y:e.clientY};
+    }
+  }, {passive:true});
+  svg.addEventListener('pointercancel', () => { lastTouchTap = 0; lastTouchPoint = null; });
+
+  function blink() {
+    if (svg.classList.contains('petting')) return;
+    lids.style.opacity = '1';
+    clearTimeout(blinkTimer);
+    blinkTimer = setTimeout(() => {
+      lids.style.opacity = '0';
+      setTimeout(() => { if (Math.random() < .25) blink(); }, 180);
+    }, 115);
+  }
+  let cuddleTimer;
+  function cuddle(clientX, clientY) {
+    clearTimeout(cuddleTimer);
+    svg.classList.remove('petting');
+    void svg.getBoundingClientRect();
+    svg.classList.add('petting');
+    cuddleTimer = setTimeout(() => svg.classList.remove('petting'), 1050);
+    const scene = document.querySelector('.scene');
+    const r = scene.getBoundingClientRect();
+    const symbols = ['♥', '♥', '♡', '♥', '♡'];
+    symbols.forEach(symbol => {
+      const heart = document.createElement('span');
+      heart.className = 'heart'; heart.textContent = symbol;
+      heart.style.left = `${clientX-r.left+(Math.random()-.5)*150}px`;
+      heart.style.top = `${clientY-r.top+(Math.random()-.5)*42}px`;
+      heart.style.setProperty('--drift', `${(Math.random()-.5)*70}px`);
+      heart.style.fontSize = `${19+Math.random()*17}px`;
+      scene.appendChild(heart);
+      heart.addEventListener('animationend', () => heart.remove(), {once:true});
+    });
+  }
+  svg.addEventListener('click', e => {
+    // Touch gestures are handled by pointerup; avoid the synthetic click firing
+    // after a double tap and accidentally counting extra cuddles.
+    if (Date.now() < suppressClickUntil || e.pointerType === 'touch') return;
+    initAudio();
+    const r = svg.getBoundingClientRect();
+    const x = (e.clientX-r.left)/r.width*640, y = (e.clientY-r.top)/r.height*650;
+    if (x>130 && x<500 && y>45 && y<635) {
+      cuddleCount += 1;
+      document.getElementById('cuddleCount').textContent = cuddleCount;
+      document.getElementById('cuddleLabel').textContent = cuddleCount === 1 ? '💗' : '💕';
+      cuddle(e.clientX,e.clientY);
+    }
+  });
+  function scheduleBlink() {
+    setTimeout(() => { blink(); scheduleBlink(); }, 2400 + Math.random() * 3000);
+  }
+  function scheduleWalk() {
+    // Due piccoli passi ogni tanto, con pause variabili per non sembrare meccanico.
+    setTimeout(() => {
+      if (!svg.classList.contains('petting')) {
+        svg.classList.remove('walking');
+        void svg.getBoundingClientRect();
+        svg.classList.add('walking');
+        setTimeout(() => svg.classList.remove('walking'), 760);
+      }
+      scheduleWalk();
+    }, 4200 + Math.random() * 6200);
+  }
+  scheduleBlink();
+  scheduleWalk();
+})();
+</script>
+
+<script>
+// Registra la cache offline della PWA quando viene servita da HTTPS o localhost.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js').catch(err => console.warn('Service worker non registrato:', err));
+  });
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,22 @@
+IL PAPERO CURIOSO — PWA OFFLINE
+
+CONTENUTO
+- index.html: gioco originale, adattato con metadati PWA
+- manifest.json: nome, icone e modalità standalone
+- service-worker.js: cache offline
+- icons/: icone dell'app
+
+PUBBLICAZIONE (GRATUITA)
+1. Estrai lo ZIP sul computer.
+2. Crea un repository GitHub e carica tutti i file e la cartella icons mantenendo la struttura.
+3. In GitHub: Settings > Pages > Deploy from a branch > scegli il branch principale e / (root). Salva.
+4. Attendi che GitHub Pages mostri l'indirizzo HTTPS del sito. Aprilo una prima volta e attendi il caricamento completo con Internet.
+5. iPhone: apri il sito in Safari > Condividi > Aggiungi alla schermata Home.
+6. Android: apri il sito in Chrome > menu ⋮ > Installa app oppure Aggiungi a schermata Home.
+7. Per verificare offline: dopo il primo caricamento, chiudi l'app, attiva modalità aereo e riaprila dall'icona.
+
+NOTE IMPORTANTI
+- Il file HTML da solo, aperto con file:// o in un visualizzatore, non può registrare il service worker. Deve essere pubblicato su HTTPS (oppure testato su localhost).
+- La prima visita deve avvenire con Internet attivo perché il browser possa memorizzare i file.
+- Se aggiorni il gioco in futuro, cambia CACHE_NAME in service-worker.js (es. papero-coccole-v2) per forzare l'aggiornamento della cache.
+- Questo pacchetto è una PWA installabile, non un APK/IPA nativo e non viene pubblicato automaticamente negli store.
